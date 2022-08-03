@@ -1,15 +1,23 @@
 // preload.js
 const { spawn } = require('child_process');
-const { contextBridge } = require('electron')
+const path = require('path');
+const { contextBridge } = require('electron');
 
-contextBridge.exposeInMainWorld('versions', {
+contextBridge.exposeInMainWorld('decoder', {
   test: () => {
     
-    const child = spawn('node', ['./decoder/index.js'], {
-      cwd: process.cwd(),
-      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+    const cwd = process.cwd();
+    const decoderPath = path.join(cwd, 'decoder/index.js');
+
+    console.log('exec', process.execPath)
+
+    try {
+    const child = spawn('node', [decoderPath], {
+      cwd: cwd,
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       env: {
-        ELECTRON_RUN_AS_NODE: 1,
+        ...process.env,
+        ELECTRON_RUN_AS_NODE: 1
       }
     });
   
@@ -17,14 +25,20 @@ contextBridge.exposeInMainWorld('versions', {
       console.log('PARENT', m)
     });
 
-    child.on('error', (code, signal) => { console.log(code, signal) })
+    child.on('error', (err) => { console.log('SPAWN ERROR', err) })
 
-    child.stderr.on('data', (data) => { console.log(Buffer.from(data).toString()) })
+    child.stderr.on('data', (data) => {'STDERR:',  console.log(Buffer.from(data).toString()) })
+
+    child.stdout.on('data', (data) => {'STDERR:',  console.log(Buffer.from(data).toString()) })
   
     child.send({hello: 'world'})
 
-    console.log(child)
-  
+    child.on('exit', (data) => {console.log(data)})
+
+    console.log('child', child)
+  } catch (err) {
+    console.log('err', err)
+  }
 
   }
 })

@@ -10,5 +10,11 @@
   "license": "ISC",
   "dependencies": {
     "@u4/opencv4nodejs": "^6.2.1"
+  },
+  "DISABLED_opencv4nodejs": {
+    "disableAutoBuild": "1",
+    "OPENCV_INCLUDE_DIR": "",
+    "OPENCV_LIB_DIR": "",
+    "OPENCV_BIN_DIR": ""
   }
 }
