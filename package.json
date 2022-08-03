@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shriekster/more-tv.git"
+    "url": "git+https://github.com/shriekster/MoReTV.git"
   },
   "keywords": [
     "TV",
@@ -22,9 +22,9 @@
   "author": "shriekster",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/shriekster/more-tv/issues"
+    "url": "https://github.com/shriekster/MoReTV/issues"
   },
-  "homepage": "https://github.com/shriekster/more-tv#readme",
+  "homepage": "https://github.com/shriekster/MoReTV#readme",
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.65",
     "@electron-forge/maker-deb": "^6.0.0-beta.65",
