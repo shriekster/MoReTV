@@ -9,7 +9,8 @@
   "author": "shriekster",
   "license": "ISC",
   "dependencies": {
-    "@u4/opencv4nodejs": "^6.2.1"
+    "@u4/opencv4nodejs": "^6.2.1",
+    "mathjs": "^11.0.1"
   },
   "DISABLED_opencv4nodejs": {
     "disableAutoBuild": "1",
