@@ -1,14 +1,30 @@
 // preload.js
+const { spawn } = require('child_process');
+const { contextBridge } = require('electron')
 
-// All of the Node.js APIs are available in the preload process.
-// It has the same sandbox as a Chrome extension.
-window.addEventListener('DOMContentLoaded', () => {
-    const replaceText = (selector, text) => {
-      const element = document.getElementById(selector)
-      if (element) element.innerText = text
-    }
+contextBridge.exposeInMainWorld('versions', {
+  test: () => {
+    
+    const child = spawn('node', ['./decoder/index.js'], {
+      cwd: process.cwd(),
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+      env: {
+        ELECTRON_RUN_AS_NODE: 1,
+      }
+    });
   
-    for (const dependency of ['chrome', 'node', 'electron']) {
-      replaceText(`${dependency}-version`, process.versions[dependency])
-    }
-  })
+    child.on('message', (m) => {
+      console.log('PARENT', m)
+    });
+
+    child.on('error', (code, signal) => { console.log(code, signal) })
+
+    child.stderr.on('data', (data) => { console.log(Buffer.from(data).toString()) })
+  
+    child.send({hello: 'world'})
+
+    console.log(child)
+  
+
+  }
+})

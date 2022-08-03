@@ -1,0 +1,14 @@
+{
+  "name": "decoder",
+  "version": "1.0.0",
+  "description": "Watermark decoder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "shriekster",
+  "license": "ISC",
+  "dependencies": {
+    "@u4/opencv4nodejs": "^6.2.1"
+  }
+}
