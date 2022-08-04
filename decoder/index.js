@@ -8,7 +8,7 @@ process.on('message', (m) => {
 
     //console.log('CHILD got message', m);
 
-    const videoPath = path.join(__dirname, '../assets/watermarked/WMAO.avi');
+    const videoPath = path.join(__dirname, '../assets/watermarked/_WMAO.avi');
 
     const video = new cv.VideoCapture(videoPath)
 
