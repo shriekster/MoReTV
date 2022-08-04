@@ -25,6 +25,11 @@ const createWindow = () => {
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
+  mainWindow.on('close', (e) => {
+
+    mainWindow.webContents.send('closing')
+
+  });
 }
 
 // This method will be called when Electron has finished

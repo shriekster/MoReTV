@@ -1,11 +1,45 @@
 const cv = require('@u4/opencv4nodejs');
+const { complex } = require('mathjs');
+const math = require('mathjs');
+const path = require('path');
+
 
 process.on('message', (m) => {
 
-    console.log('CHILD got message', m);
-    process.send('message from CHILD');
+    //console.log('CHILD got message', m);
 
-    console.log(cv)
+    const videoPath = path.join(__dirname, '../assets/watermarked/WMAO.avi');
+
+    const video = new cv.VideoCapture(videoPath)
+
+    const frames = video.get(cv.CAP_PROP_FRAME_COUNT);
+
+    let i = 1;
+
+    while (i <= frames) {
+
+      let frame = video.read();
+
+      if (!frame.empty) {
+
+        processFrame(frame);
+
+      } else {
+
+        break;
+
+      }
+
+      i++;
+
+
+    }
+
+    console.log(frames, 'frames')
+
+    video.release();
+
+    process.send('message from CHILD');
 
 });
 
@@ -23,105 +57,150 @@ var decoding = false;
 
 var decoder = undefined;
 
+//function matFromArray(rows,cols,type,array){var mat = new cv.Mat(rows,cols,type);switch(type){case cv.CV_8U:case cv.CV_8UC1:case cv.CV_8UC2:case cv.CV_8UC3:case cv.CV_8UC4:{mat.data.set(array);break}case cv.CV_8S:case cv.CV_8SC1:case cv.CV_8SC2:case cv.CV_8SC3:case cv.CV_8SC4:{mat.data8S.set(array);break}case cv.CV_16U:case cv.CV_16UC1:case cv.CV_16UC2:case cv.CV_16UC3:case cv.CV_16UC4:{mat.data16U.set(array);break}case cv.CV_16S:case cv.CV_16SC1:case cv.CV_16SC2:case cv.CV_16SC3:case cv.CV_16SC4:{mat.data16S.set(array);break}case cv.CV_32S:case cv.CV_32SC1:case cv.CV_32SC2:case cv.CV_32SC3:case cv.CV_32SC4:{mat.data32S.set(array);break}case cv.CV_32F:case cv.CV_32FC1:case cv.CV_32FC2:case cv.CV_32FC3:case cv.CV_32FC4:{mat.data32F.set(array);break}case cv.CV_64F:case cv.CV_64FC1:case cv.CV_64FC2:case cv.CV_64FC3:case cv.CV_64FC4:{mat.data64F.set(array);break}default:{throw new Error("Type is unsupported")}}return mat};
+function matFromArray(rows,cols,type,array) {
+  
+  const buffer = Buffer.from(array);
+
+  var mat = new cv.Mat(buffer, rows,cols,type);
+
+  return mat;
+
+}
+
 function fft2(array, rows = 40, cols = 40) {
 
   let real = undefined;
 
   real = array instanceof cv.Mat  ?
     array                         :
-    cv.matFromArray(rows, cols, cv.CV_64F, array);
+    //cv.matFromArray(rows, cols, cv.CV_64F, array); // this was commented! (matFromArray)
+    matFromArray(rows, cols, cv.CV_64F, array);
 
-  let planes = new cv.MatVector();
+  //let planes = new cv.MatVector(); // this was commented! (matFromArray)
 
-  let complex = new cv.Mat();//delete
-  let imaginary = new cv.Mat.zeros(rows, cols, cv.CV_64F);//delete
-  planes.push_back(real); // real plane
-  planes.push_back(imaginary);// imaginary plane
-  cv.merge(planes, complex);
-
+  //let complex = new cv.Mat();//delete // this was commented! (matFromArray)
+  //let imaginary = new cv.Mat.zeros(rows, cols, cv.CV_64F);//delete // this was commented! (matFromArray)
+  let imaginary = new cv.Mat(rows, cols, cv.CV_64F, 0); 
+  //planes.push_back(real); // real plane   // this was commented! (matFromArray)
+  //planes.push_back(imaginary);// imaginary plane    // this was commented! (matFromArray)
+  //cv.merge(planes, complex);    // this was commented! (matFromArray)
+  let complex = matFromArray(rows, cols, cv.CV_64F, [real.getDataAsArray(), imaginary.getDataAsArray()])
+  
   // actual Fourier transform 
-  cv.dft(complex, complex, cv.DFT_COMPLEX_OUTPUT);
+  //cv.dft(complex, complex, cv.DFT_COMPLEX_OUTPUT); // this was commented! (matFromArray)
+  complex = complex.dft(cv.DFT_COMPLEX_OUTPUT, 0) // this was added (matFromArray)
   
   // split the real and imaginary planes 
-  cv.split(complex, planes);
-
-  let re = planes.get(0);
-  let im = planes.get(1);
+  //cv.split(complex, planes);
+  let planes = complex.splitChannels(); //??????????????????????????????????????????
+  
+  //let re = planes.get(0); // this was commented! (matFromArray)
+  let re = planes[0];
+  //let im = planes.get(1); // this was commented! (matFromArray)
+  let im = planes[1];
 
   for (let i = 0; i < rows; i++) {
 
     for (let j = 0; j < cols; j++) {
 
-      re.doublePtr(i, j)[0] = re.doubleAt(i, j).toFixed(4);
-      im.doublePtr(i, j)[0] = im.doubleAt(i, j).toFixed(4);
+      //re.doublePtr(i, j)[0] = re.doubleAt(i, j).toFixed(4); // this was commented! (matFromArray)
+      //im.doublePtr(i, j)[0] = im.doubleAt(i, j).toFixed(4); // this was commented! (matFromArray)
+
+      //re.set(i, j, re.at(i, j).toFixed(4)) // this was commented! (matFromArray) and must be uncommented
+      //im.set(i, j, im.at(i, j).toFixed(4)) // this was commented! (matFromArray) and must be uncommented
 
     }
 
   }
 
-  real.delete();
-  complex.delete();
-  imaginary.delete();
+  //real.delete(); // this was commented! (matFromArray)
+  //complex.delete(); // this was commented! (matFromArray)
+  //imaginary.delete(); // this was commented! (matFromArray)
 
-  return planes;
+  //return planes; // this was commented! (matFromArray)
+  return [re, im];
 }
 
 function ifft2(array, rows = 40, cols = 40) {
-  let complex = undefined;
+  //let complex = undefined; // this was commented! (matFromArray)
+  let ret;
 
-  complex = array instanceof cv.MatVector ?
-    new cv.Mat()                          :
-    null;
+  let complex = array instanceof cv.Mat ? array : matFromArray(rows, cols, cv.CV_64F, array); // new, uncertain (matFromArray)
+
+  //complex = array instanceof cv.MatVector ? // this was commented! (matFromArray)
+  //  new cv.Mat()                          : // this was commented! (matFromArray)
+  //  null;                                   // this was commented! (matFromArray)
 
   if (complex) {
 
-    cv.merge(array, complex);
+    //cv.merge(array, complex); // this was commented! (matFromArray)
     
     // This is how MATLAB does ifft2, pay great attention
-    cv.dft(complex, complex, cv.DFT_INVERSE | cv.DFT_SCALE); 
+    //cv.dft(complex, complex, cv.DFT_INVERSE | cv.DFT_SCALE); // this was commented! (matFromArray)
+    complex = complex.dft(cv.cv.DFT_INVERSE | cv.DFT_SCALE, 0); // this was added (matFromArray)
 
     // split the real and imaginary planes //
-    cv.split(complex, array);
+    //cv.split(complex, array); // this was commented! (matFromArray)
+    let planes = complex.splitChannels();
 
-    let re = array.get(0);
-    let im = array.get(1);
+    //let re = array.get(0); // this was commented! (matFromArray)
+    let re = planes[0];
+    //let im = array.get(1); // this was commented! (matFromArray)
+    let im = planes[1];
   
     for (let i = 0; i < rows; i++) {
   
       for (let j = 0; j < cols; j++) {
   
-        re.doublePtr(i, j)[0] = re.doubleAt(i, j).toFixed(4);
-        im.doublePtr(i, j)[0] = im.doubleAt(i, j).toFixed(4);
+        //re.doublePtr(i, j)[0] = re.doubleAt(i, j).toFixed(4); // this was commented! (matFromArray)
+        //im.doublePtr(i, j)[0] = im.doubleAt(i, j).toFixed(4); // this was commented! (matFromArray)
+        re?.set(i, j, Number(re.at(i, j)).toFixed(4) | 0) // this was commented! (matFromArray) and must be uncommented
+        im?.set(i, j, Number(im.at(i, j)).toFixed(4) | 0) // this was commented! (matFromArray) and must be uncommented
   
       }
   
     }
 
-    complex.delete();
+    //complex.delete(); // this was commented! (matFromArray)
+    ret = matFromArray(rows, cols, cv.CV_64F, [re?.getDataAsArray(), im?.getDataAsArray()]);
 
   }
 
-  return array;
+  //return array; // this was commented! (matFromArray)
+  return ret;
 }
 
 function phaseOnly(cv_MatVector) {
-  let phased = new cv.MatVector();
-  let realPlane = cv_MatVector.get(0).clone();
-  let imaginaryPlane = cv_MatVector.get(1).clone();
+  //let phased = new cv.MatVector();// this was commented! (matFromArray)
+  let phased = [];
+  let realPlane = cv_MatVector[0].copy();
+  let imaginaryPlane = cv_MatVector[1].copy();
+  //let realPlane = cv_MatVector.get(0).clone();    // this was commented! (matFromArray)
+  //let imaginaryPlane = cv_MatVector.get(1).clone(); // this was commented! (matFromArray)
 
   let n = realPlane.rows;
 
   for (let ii = 0; ii < n; ii++) {
     for (let jj = 0; jj < n; jj++) {
-      if (realPlane.doubleAt(ii, jj) !== 0 ||
-          imaginaryPlane.doubleAt(ii, jj) !== 0) {
+      //if (realPlane.doubleAt(ii, jj) !== 0 ||           // this was commented! (matFromArray)
+      //    imaginaryPlane.doubleAt(ii, jj) !== 0) {      // this was commented! (matFromArray)
+      if(realPlane.at(ii, jj) !== 0 || imaginaryPlane.at(ii, jj) !== 0) {
 
-            let re = realPlane.doubleAt(ii, jj).toFixed(4);
-            let im = imaginaryPlane.doubleAt(ii, jj).toFixed(4);
+            //let re = realPlane.doubleAt(ii, jj).toFixed(4); // this was commented! (matFromArray)
+            
+            let re = Number(realPlane.at(ii, jj)).toFixed(4);
+            //let im = imaginaryPlane.doubleAt(ii, jj).toFixed(4);  // this was commented! (matFromArray)
+            let im = Number(imaginaryPlane.at(ii, jj)).toFixed(4);
 
+            if (isNaN(re)) re = 0;
+            if (isNaN(im)) im = 0;
+
+            
             let num = math.complex(
               re, //!!
-              im); //!!
+              im
+            ); //!!
 
             let den =
             math.complex(
@@ -132,46 +211,62 @@ function phaseOnly(cv_MatVector) {
 
             let result = math.divide(num, den);
 
-            let rre = result.re.toFixed(4);
-            let ire = result.im.toFixed(4);
+            let rre = Number(result.re).toFixed(4) | 0;
+            let ire = Number(result.im).toFixed(4) | 0;
 
-            realPlane.doublePtr(ii, jj)[0] = rre; //!! rre
+            //realPlane.doublePtr(ii, jj)[0] = rre; //!! rre // this was commented! (matFromArray)
+            realPlane?.set(ii, jj, rre);
             
-            imaginaryPlane.doublePtr(ii, jj)[0] = ire; //!!
+            //imaginaryPlane.doublePtr(ii, jj)[0] = ire; //!! // this was commented (matFromArray)
+            imaginaryPlane?.set(ii, jj, ire);
 
       } else {
-        realPlane.doublePtr(ii, jj)[0] = 1;
-        imaginaryPlane.doublePtr(ii, jj)[0] = 0;
+        //realPlane.doublePtr(ii, jj)[0] = 1; // this was commented! (matFromArray)
+        realPlane.set(ii, jj, 1)
+        //imaginaryPlane.doublePtr(ii, jj)[0] = 0; // this was commented! (matFromArray)
+        imaginaryPlane.set(ii, jj, 0);
       }
     }
   }
 
-  phased.push_back(realPlane);
-  phased.push_back(imaginaryPlane);
+  //phased.push_back(realPlane);// this was commented! (matFromArray)
+  phased.push(realPlane);
+  //phased.push_back(imaginaryPlane);// this was commented! (matFromArray)
+  phased.push(imaginaryPlane);
 
   return phased;
 }
 
 function conj(cv_MatVector) {
-  let imaginaryPlane = cv_MatVector.get(1);
+  //let imaginaryPlane = cv_MatVector.get(1); // this was commented! (matFromArray)
+  let imaginaryPlane = cv_MatVector[1];
   for (let r = 0; r < imaginaryPlane.rows; r++) {
     for (let c = 0; c < imaginaryPlane.cols; c++) {
-      imaginaryPlane.doublePtr(r, c)[0] *= (-1);
+      //imaginaryPlane.doublePtr(r, c)[0] *= (-1); // this was commented! (matFromArray)
+      imaginaryPlane.set(r, c, imaginaryPlane.at(r, c) * (-1));
     }
   }
   return cv_MatVector;
 }
 
 function dotMultiply(cv_MatVector1, cv_MatVector2) {
-  if (cv_MatVector1.get(0).rows !== cv_MatVector2.get(0).rows ||
-      cv_MatVector1.get(0).cols !== cv_MatVector2.get(0).cols)
-    return null;
+  //if (cv_MatVector1.get(0).rows !== cv_MatVector2.get(0).rows || // this was commented! (matFromArray)
+  //    cv_MatVector1.get(0).cols !== cv_MatVector2.get(0).cols)  // this was commented! (matFromArray)
+  //  return null;                                                // this was commented! (matFromArray)
+  if (cv_MatVector1[0]?.rows !== cv_MatVector2[0]?.rows ||
+      cv_MatVector1[0]?.cols !== cv_MatVector2[0]?.cols)
+      return null;
 
-  let result = new cv.MatVector();
-  let rp1 = cv_MatVector1.get(0).clone();
-  let ip1 = cv_MatVector1.get(1).clone();
-  let rp2 = cv_MatVector2.get(0);
-  let ip2 = cv_MatVector2.get(1);
+  //let result = new cv.MatVector();  // this was commented! (matFromArray)
+  let result = [];
+  //let rp1 = cv_MatVector1.get(0).clone(); // this was commented! (matFromArray)
+  //let ip1 = cv_MatVector1.get(1).clone(); // this was commented! (matFromArray)
+  //let rp2 = cv_MatVector2.get(0); // this was commented! (matFromArray)
+  //let ip2 = cv_MatVector2.get(1); // this was commented! (matFromArray)
+  let rp1 = cv_MatVector1[0].copy();
+  let ip1 = cv_MatVector1[1].copy();
+  let rp2 = cv_MatVector2[0].copy();
+  let ip2 = cv_MatVector2[1].copy();
   
   if (currentFrame >= 155) {
     //console.log(rp1.data64F)
@@ -181,10 +276,14 @@ function dotMultiply(cv_MatVector1, cv_MatVector2) {
   for (let r = 0; r < rp1.rows; r++) {
     for (let c = 0; c < rp1.cols; c++) {
       
-      let r1 = rp1.doubleAt(r, c) || 0;
-      let i1 = ip1.doubleAt(r, c) || 0;
-      let r2 = rp2.doubleAt(r, c) || 0;
-      let i2 = ip2.doubleAt(r, c) || 0;
+      //let r1 = rp1.doubleAt(r, c) || 0; // this was commented! (matFromArray)
+      //let i1 = ip1.doubleAt(r, c) || 0; // this was commented! (matFromArray)
+      //let r2 = rp2.doubleAt(r, c) || 0; // this was commented! (matFromArray)
+      //let i2 = ip2.doubleAt(r, c) || 0; // this was commented! (matFromArray)
+      let r1 = rp1.at(r, c) || 0;
+      let i1 = ip1.at(r, c) || 0;
+      let r2 = rp2.at(r, c) || 0;
+      let i2 = ip2.at(r, c) || 0;
 
       if (currentFrame >= 155) {
         //console.log(r1, i1, r2, i2)
@@ -196,13 +295,17 @@ function dotMultiply(cv_MatVector1, cv_MatVector2) {
 
       let complexProduct = math.multiply(complex1, complex2);
 
-      rp1.doublePtr(r, c)[0] = complexProduct.re.toFixed(4);
-      ip1.doublePtr(r, c)[0] = complexProduct.im.toFixed(4);
+      //rp1.doublePtr(r, c)[0] = complexProduct.re.toFixed(4); // this was commented! (matFromArray)
+      rp1.set(r, c, complexProduct.re.toFixed(4) | 0);
+      //ip1.doublePtr(r, c)[0] = complexProduct.im.toFixed(4); // this was commented! (matFromArray)
+      ip1.set(r, c, complexProduct.im.toFixed(4) | 0);
     }
   }
 
-  result.push_back(rp1);
-  result.push_back(ip1);
+  //result.push_back(rp1); // this was commented! (matFromArray)
+  //result.push_back(ip1); // this was commented! (matFromArray)
+  result.push(rp1);
+  result.push(rp2);
 
   return result;
 }
@@ -212,9 +315,12 @@ function abs(complexArray) {
   if (!complexArray) {
     return null;
   }
-
-  let real = complexArray.get(0).data64F;//.map(a => a);
-  let imaginary = complexArray.get(1).data64F;//.map(a => a);
+  
+  //let real = complexArray.get(0).data64F;//.map(a => a); // this was commented! (matFromArray)
+  //let imaginary = complexArray.get(1).data64F;//.map(a => a); // this was commented! (matFromArray)
+  let [real, imaginary] = complexArray.splitChannels();
+  real = real?.getDataAsArray();
+  imaginary = imaginary?.getDataAsArray();
 
   let length = real.length;
 
@@ -224,11 +330,11 @@ function abs(complexArray) {
 
     let res = math.abs(
       math.complex(
-        real[i].toFixed(4), 
-        imaginary[i].toFixed(4))
+        Number(real?.[i]).toFixed(4) | 0, 
+        Number(imaginary?.[i]).toFixed(4) | 0)
     );
 
-    result.push(parseFloat(res.toFixed(4)));
+    result.push(parseFloat(Number(res).toFixed(4)));
 
   }
 
@@ -418,31 +524,35 @@ function detectWatermark (imageData) {
 
 
   let A = [0.2500, -0.5000, 0.2500, -0.5000, 1.0000, -0.5000, 0.2500, -0.5000, 0.2500];
-  let Am = cv.matFromArray(3, 3, cv.CV_64FC1, A);
-  let filtered = new cv.Mat();
+  //let Am = cv.matFromArray(3, 3, cv.CV_64FC1, A); // this was commented! (matFromArray)
+  let Am = matFromArray(3, 3, cv.CV_64FC1, A);
+  //let filtered = new cv.Mat(); // his was commented! (matFromArray)
   let anchor = new cv.Point(-1, -1);
 
   // 2D convolution - image filtering //
-  cv.filter2D(imageData, filtered, cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED);
+  //cv.filter2D(imageData, filtered, cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented! (matFromArray)
+  let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); 
 
   let c = Math.floor(cols / M);
   let r = Math.floor(rows / M);
   
   // preparing the matrices for Fourier domain operations 
-  let rep = new cv.Mat.zeros(M, M, cv.CV_64F);//delete
+  //let rep = new cv.Mat.zeros(M, M, cv.CV_64F);//delete // this was commented! (matFromArray)
+  let rep = new cv.Mat(M, M, cv.CV_64F, 0);
   for (let ii = 0; ii < M; ii++) {
 
     for (let jj = 0; jj < M; jj++) {
 
-      rep.doublePtr(ii,jj)[0] = 0; //!!
+      //rep.doublePtr(ii,jj)[0] = 0; //!! // this was commented! (matFromArray)
+      rep.set(ii, jj, 0);
 
       for (let j1 = 0; j1 < r; j1++) {
 
         for (let j2 = 0; j2 < c; j2++) {
 
-          rep.doublePtr(ii,jj)[0] += 
-            filtered.doubleAt(ii + j1 * M, jj + j2 * M);
-
+          //rep.doublePtr(ii,jj)[0] +=                        // this was commented! (matFromArray)
+          //  filtered.doubleAt(ii + j1 * M, jj + j2 * M);    // this was commented! (matFromArray)
+          rep.set(ii, jj, filtered.at(ii + j1 * M, jj + j2 * M));
         }
       }
     }
@@ -455,7 +565,8 @@ function detectWatermark (imageData) {
 
     for (let j = 0; j < M; j++) {
 
-      _rep.push(rep.doubleAt(i, M - j - 1))
+      //_rep.push(rep.doubleAt(i, M - j - 1)); // this was commented! (matFromArray)
+      _rep.push(rep.at(i, M - j - 1));
     }
   }
   //console.log(_rep)
@@ -495,98 +606,39 @@ function detectWatermark (imageData) {
     }
   }
 
-  filtered.delete();
+  //filtered.delete(); // this was commented! (matFromArray)
 
-  R.delete();
+  //R.delete(); // this was commented! (matFromArray)
 
-  imageData.delete();
+  //imageData.delete(); // this was commented! (matFromArray)
 
   decoding = false;
 
   return payload;
 }
 
-function processFrame() {
+function processFrame(frame) {
   
-  if (currentFrame < frameBuffer.length && !appending && !decoding) {
-    
-    decoding = true;
+  let frameData = frame.getDataAsArray();
 
-    if (decoding) {
-
-    let frame = frameBuffer[currentFrame];
-
-    let clampedArrayRgb = new Uint8ClampedArray(frame, 54).reverse();
-    //let clampedArrayBgr = new Uint8ClampedArray(frame, 54);
-    
-    let rgbImage = new cv.matFromArray(360, 640, cv.CV_8UC3, clampedArrayRgb);
-    //let bgrImage = new cv.matFromArray(360, 640, cv.CV_8UC3, clampedArrayBgr);
-
-    let grayImage = new cv.Mat(360, 640, cv.CV_8UC1);
-    cv.cvtColor(rgbImage, grayImage, cv.COLOR_RGB2GRAY, 1);
-    //cv.cvtColor(bgrImage, grayImage, cv.COLOR_BGR2GRAY, 1);
-
-    let payload = detectWatermark(grayImage);
-
-    rgbImage.delete();
-    
-    currentFrame++;
-
-    //decoding = false;
-
-    port.postMessage(
-      {
-        message: 'decoded',
-        frame: currentFrame,
-        payload: payload,
-      }
-    );
-
-    //console.log(`[${currentFrame}]: ${payload}`);
-    }
-  }
-
-  else {
-    clearInterval(timer);
-  }
+  let clampedArrayRgb = new Uint8ClampedArray(frameData, 54).reverse();
+  //let clampedArrayBgr = new Uint8ClampedArray(frame, 54);
   
-}
+  //let rgbImage = new cv.matFromArray(360, 640, cv.CV_8UC3, clampedArrayRgb);// this was commented! (matFromArray)
+  let rgbImage = new matFromArray(360, 640, cv.CV_8UC3, clampedArrayRgb);
 
-onmessage = function (e) {
+  //let bgrImage = new cv.matFromArray(360, 640, cv.CV_8UC3, clampedArrayBgr);
 
-  if (!port) {
+  //let grayImage = new cv.Mat(360, 640, cv.CV_8UC1); // this was commented! (matFromArray)
+  //cv.cvtColor(rgbImage, grayImage, cv.COLOR_RGB2GRAY, 1); // this was commented! (matFromArray)
+  //cvtColor(rgbImage, grayImage, cv.COLOR_RGB2GRAY, 1); // this was commented! (matFromArray)
+  let grayImage = rgbImage.cvtColor(cv.COLOR_RGB2GRAY, 1);
+  //cv.cvtColor(bgrImage, grayImage, cv.COLOR_BGR2GRAY, 1);
 
-    port = e.data.port;
+  let payload = detectWatermark(grayImage);
 
-    port.onmessage = function (e) {
+  console.log('PAYLOAD', payload)
 
-      clearInterval(timer);
-
-      appending = true;
-      decoding = false;
-      
-      if (e.data.message && 'loaded' === e.data.message) {
-
-        // store the frame count
-        frames = e.data.frames;
-
-        // reset the current frame counter
-        currentFrame = 0;
-        // reset the frame buffer
-        frameBuffer.length = 0;
-
-      }
-
-      frameBuffer.push(...e.data.segment);
-
-      //console.log('Appended segment; decoding...');
-      
-      appending = false;
-
-      timer = setInterval(processFrame, 10);
-
-    }
-
-  }
+  //rgbImage.delete(); //this was commented! (matFromArray)
 
 }
