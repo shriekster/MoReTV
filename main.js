@@ -4,12 +4,18 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path');
 
+let mainWindow;
 
-let canClose = false;
+const mainWindowState = {
+
+  canClose: false,
+  closeRequested: false,
+
+};
 
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -27,13 +33,11 @@ const createWindow = () => {
   // mainWindow.webContents.openDevTools()
   mainWindow.on('close', (e) => {
 
-    
+    if (!mainWindowState.canClose) e.preventDefault();
+
+    mainWindowState.closeRequested = true;
+
     mainWindow.webContents.send('closing');
-    
-
-  });
-
-  mainWindow.on('closing', (data) => {
 
   });
 
@@ -43,13 +47,27 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  createWindow()
+
+  ipcMain.on('closing', (event, data) => {
+
+    if (data?.decoderProcessKilled && mainWindowState.closeRequested) {
+
+      mainWindowState.canClose = true;
+
+    }
+
+    mainWindow.close();
+  
+  });
+
+  createWindow();
 
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  });
+
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -57,4 +75,5 @@ app.whenReady().then(() => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
-})
+});
+
