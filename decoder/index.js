@@ -537,7 +537,7 @@ function detectWatermark (imageData) {
   //cv.filter2D(imageData, filtered, cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented! (matFromArray)
   //let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented AND MUST BE UNCOMMENTED FOR TESTS! (matFromArray)
   let filtered = imageData.filter2D(cv.CV_64F, Af, newAnchor, 0, cv.BORDER_ISOLATED); // THIS WAS ADDED FOR TESTS!
-  cv.imshow('filtered', filtered);cv.waitKey();
+  //cv.imshow('filtered', filtered);cv.waitKey();
   let c = Math.floor(cols / M);
   let r = Math.floor(rows / M);
   
