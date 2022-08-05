@@ -525,13 +525,18 @@ function detectWatermark (imageData) {
   let A = [0.2500, -0.5000, 0.2500, -0.5000, 1.0000, -0.5000, 0.2500, -0.5000, 0.2500];
   //let Am = cv.matFromArray(3, 3, cv.CV_64FC1, A); // this was commented! (matFromArray)
   let Am = matFromArray(3, 3, cv.CV_64FC1, A);
-  //let filtered = new cv.Mat(); // his was commented! (matFromArray)
   let anchor = new cv.Point(-1, -1);
 
+  Am.flip(0); // this was added! (OpenCV peculiarity: https://docs.opencv.org/4.5.1/d4/d86/group__imgproc__filter.html#ga27c049795ce870216ddfb366086b5a04)
+  let newAnchor = new cv.Point(Am.cols - anchor.x - 1, Am.rows - anchor.y - 1);
+
+  //let filtered = new cv.Mat(); // this was commented! (matFromArray)
+  
+  
   // 2D convolution - image filtering //
   //cv.filter2D(imageData, filtered, cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented! (matFromArray)
-  let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); 
-
+  //let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented again! (matFromArray)
+  let filtered = imageData.filter2D(cv.CV_64F, Am, newAnchor, 0, cv.BORDER_ISOLATED); 
   let c = Math.floor(cols / M);
   let r = Math.floor(rows / M);
   
@@ -649,8 +654,6 @@ function processFrame(frame) {
   //rgbImage.delete(); //this was commented! (matFromArray)
 
 }
-
-
 
 process.on('message', (m) => {
 

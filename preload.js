@@ -31,11 +31,11 @@ contextBridge.exposeInMainWorld('decoder', {
 
   test: () => {
 
-    console.log(decoder);
+    console.log('PID:', decoder?.pid);
     decoder.send({hello: 'world'});
   
   },
-  
+
 });
 
 ipcRenderer.on('closing', (_) => { let killed = decoder?.kill('SIGKILL'); ipcRenderer.send('closing', { decoderProcessKilled: killed }) });
