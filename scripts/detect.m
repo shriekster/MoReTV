@@ -9,7 +9,7 @@ COLUMNS = size(IM,2);
 
 A = 1/4 * [1 -2 1;-2 4 -2;1 -2 1];
 % preprocessing : filter the marked image with A
-IM = conv2(double(IM),A,'same');
+IM = conv2(double(IM),A,'same');imshow(IM)
 %imshow(IM);%
 %pause;%
 
@@ -28,7 +28,7 @@ for ii=1:M
         end
     end
 end
-%rep(1,:)
+%rep(1,:);
 %x=phaseOnly(fft2(rep)).*phaseOnly(conj(fft2(W)));x(1,:)
 R=ifft2(phaseOnly(fft2(rep)).*phaseOnly(conj(fft2(W))));
 R=abs(R); %cv.magnitude%
@@ -36,8 +36,8 @@ R=abs(R); %cv.magnitude%
 %R(6,:)%
 %R(1,10)%
 %sum(sum(R))%
-re = real(sum(sum(R)));%
-im = imag(sum(sum(R)));%
+re = real(sum(sum(R))); % comment
+im = imag(sum(sum(R))); % comment
 
 if(showFigures)
     colormap('Winter');

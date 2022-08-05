@@ -50,7 +50,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('closing', (event, data) => {
 
-    if (data?.decoderProcessKilled && mainWindowState.closeRequested) {
+    if (mainWindowState.closeRequested) {
 
       mainWindowState.canClose = true;
 

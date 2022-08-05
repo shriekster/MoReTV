@@ -527,16 +527,17 @@ function detectWatermark (imageData) {
   let Am = matFromArray(3, 3, cv.CV_64FC1, A);
   let anchor = new cv.Point(-1, -1);
 
-  Am.flip(0); // this was added! (OpenCV peculiarity: https://docs.opencv.org/4.5.1/d4/d86/group__imgproc__filter.html#ga27c049795ce870216ddfb366086b5a04)
-  let newAnchor = new cv.Point(Am.cols - anchor.x - 1, Am.rows - anchor.y - 1);
+  let Af = Am.flip(0); // this was added! (OpenCV peculiarity: https://docs.opencv.org/4.5.1/d4/d86/group__imgproc__filter.html#ga27c049795ce870216ddfb366086b5a04)
+  let newAnchor = new cv.Point(Af.cols - anchor.x - 1, Af.rows - anchor.y - 1);
 
   //let filtered = new cv.Mat(); // this was commented! (matFromArray)
   
   
   // 2D convolution - image filtering //
   //cv.filter2D(imageData, filtered, cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented! (matFromArray)
-  //let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented again! (matFromArray)
-  let filtered = imageData.filter2D(cv.CV_64F, Am, newAnchor, 0, cv.BORDER_ISOLATED); 
+  //let filtered = imageData.filter2D(cv.CV_64F, Am, anchor, 0, cv.BORDER_ISOLATED); // this was commented AND MUST BE UNCOMMENTED FOR TESTS! (matFromArray)
+  let filtered = imageData.filter2D(cv.CV_64F, Af, newAnchor, 0, cv.BORDER_ISOLATED); // THIS WAS ADDED FOR TESTS!
+  cv.imshow('filtered', filtered);cv.waitKey();
   let c = Math.floor(cols / M);
   let r = Math.floor(rows / M);
   
@@ -556,13 +557,16 @@ function detectWatermark (imageData) {
 
           //rep.doublePtr(ii,jj)[0] +=                        // this was commented! (matFromArray)
           //  filtered.doubleAt(ii + j1 * M, jj + j2 * M);    // this was commented! (matFromArray)
-          rep.set(ii, jj, filtered.at(ii + j1 * M, jj + j2 * M));
+          rep.set(ii, jj, rep.at(ii, jj) + filtered.at(ii + j1 * M, jj + j2 * M));
         }
       }
     }
   }
 
-  // !! NEW
+  //console.log(rep.getDataAsArray())
+
+  // !! NEW - just for testing purposes
+  /*
   let _rep = [];
 
   for (let i = 0; i < M; i++) {
@@ -573,6 +577,7 @@ function detectWatermark (imageData) {
       _rep.push(rep.at(i, M - j - 1));
     }
   }
+  */
   //console.log(_rep)
   //console.log(filtered)
   //let x = phaseOnly(conj(fft2(W)));
@@ -580,7 +585,7 @@ function detectWatermark (imageData) {
   // R=ifft2(phaseOnly(fft2(rep)).*phaseOnly(conj(fft2(W))));
   let R = ifft2(
     dotMultiply(
-      phaseOnly(fft2(_rep)),
+      phaseOnly(fft2(rep)),
       phaseOnly(conj(fft2(W)))
     )
   );
@@ -588,17 +593,16 @@ function detectWatermark (imageData) {
 
   // R = abs(R)
   let Ra = abs(R);
-  //console.log(Ra)
-  
+  //console.log('R', Ra)
 
   let nbits = Math.floor(Math.log2(M) - 1);
   let threshold = 0.2;// 0.2
 
-  let found = find(Ra, threshold); // 'Ra' is abs(R)
+  let {x, y} = find(Ra, threshold); // 'Ra' is abs(R)
   //console.log(found);
-  if (found.x.length == 2) {
-    let dx = found.x[1] - found.x[0];
-    let dy = found.y[1] - found.y[0];
+  if (x.length == 2) {
+    let dx = x[1] - x[0];
+    let dy = y[1] - y[0];
     //if (Math.abs(dx) < M/2 && Math.abs(dy) < M/2) {
     if (Math.abs(dx) < M/2 && Math.abs(dy) < M/2) {
       payload =
