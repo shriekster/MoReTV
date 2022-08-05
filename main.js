@@ -5,7 +5,7 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path');
 
 
-let child;
+let canClose = false;
 
 const createWindow = () => {
   // Create the browser window.
@@ -27,9 +27,16 @@ const createWindow = () => {
   // mainWindow.webContents.openDevTools()
   mainWindow.on('close', (e) => {
 
-    mainWindow.webContents.send('closing')
+    
+    mainWindow.webContents.send('closing');
+    
 
   });
+
+  mainWindow.on('closing', (data) => {
+
+  });
+
 }
 
 // This method will be called when Electron has finished

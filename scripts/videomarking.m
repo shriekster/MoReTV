@@ -1,17 +1,19 @@
 clear all; 
 close all;
 
-videoReader = vision.VideoFileReader('AO.avi');
-%videoReader = vision.VideoFileReader('hale_bopp_2.mpg');
-videoReader.AudioOutputPort=true;
+%videoReader = vision.VideoFileReader('AO.avi'); % uncomment
+videoReader = VideoReader('assets/originals/AO.avi'); % octave
+%videoReader.AudioOutputPort=true; % uncomment
 
 attack=false;
 %attack=true;
 
-videoWriter = vision.VideoFileWriter('WMAO.avi','AudioInputPort',1);%
+%videoWriter = vision.VideoFileWriter('WMAO.avi','AudioInputPort',1); % uncomment
+videoWriter = VideoWriter('assets/watermarked/WMAO2.avi'); % octave
+open(videoWriter); % octave
 %videoWriter = vision.VideoFileWriter('WMAO.mp4','FileFormat','MPEG4');
 
-videoWriter.AudioCompressor='None (uncompressed)';
+%videoWriter.AudioCompressor='None (uncompressed)'; % uncomment
 % You can use tab completion to query valid Compressor options for your computer 
 % by typing videoWriter.AudioCompressor = ' and then pressing the tab key ...
 
@@ -25,7 +27,7 @@ if(attack)
     videoWriter.FrameRate=25;    
 else
     % uncompressed video
-    videoWriter.FrameRate=25; 
+    %videoWriter.FrameRate=25; % uncomment 
 end
 
 % dimension MxM of the random pattern
@@ -35,10 +37,11 @@ seed=10;
  
 % current frame
 k=1;
-while ~isDone(videoReader)    
-  [videoFrame,audioFrame] = step(videoReader);    
-  videoFrame=uint8(255*videoFrame);%beware!!must be uncommented
-
+%while ~isDone(videoReader) % uncomment
+while (videoReader.hasFrame()) % octave
+  %[videoFrame,audioFrame] = step(videoReader); % uncomment
+  %videoFrame=uint8(255*videoFrame); % uncomment
+  videoFrame = readFrame(videoReader); % octave
    % the last frame supplied is a null frame
   if(max(videoFrame(:))==0)
     break;
@@ -81,10 +84,11 @@ while ~isDone(videoReader)
     videoFrame=uint8(shiftFrame);
   end
   
-  step(videoWriter,videoFrame,audioFrame);%  
+  %step(videoWriter,videoFrame,audioFrame); % uncomment
+  writeVideo(videoWriter, videoFrame); % octave
   %step(videoWriter,videoFrame);
   k=k+1;
 end
-
-release(videoReader);
-release(videoWriter);
+close(videoWriter); % octave
+%release(videoReader); % uncomment
+%release(videoWriter); % uncomment

@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('decoder', {
         ELECTRON_RUN_AS_NODE: 1
       }
     });
+    console.log(decoder)
   
     decoder.on('message', (m) => {
       //console.log('PARENT', m)
@@ -43,4 +44,4 @@ contextBridge.exposeInMainWorld('decoder', {
   }
 })
 
-ipcRenderer.on('closing', (_) => { decoder?.kill('SIGKILL') })
+ipcRenderer.on('closing', (_) => { let killed = decoder?.kill('SIGKILL'); ipcRenderer.send('closing', { killed }) })

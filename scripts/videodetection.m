@@ -1,6 +1,6 @@
 clear all; close all;
 
-videoReader = VideoReader('assets/watermarked/_WMAO.avi');
+videoReader = VideoReader('assets/watermarked/WMAO2.avi'); % octave
 %videoReader = vision.VideoFileReader('WMAO.avi'); % uncomment
 %videoReader = vision.VideoFileReader('WMAO.mp4');
 %videoReader = vision.VideoFileReader('WMAO_gray.mp4', 'VideoOutputDataType', 'uint8','ImageColorSpace','Intensity');%!
@@ -20,12 +20,12 @@ nbScene=0;
 
 % current frame
 k=1;
-while (videoReader.hasFrame())
+while (videoReader.hasFrame()) % octave
 %while ~isDone(videoReader) % uncomment
   %[videoFrame, audioFrame] = step(videoReader); % uncomment
   %[audioFrame, videoFrame] = step(videoReader);%added by daniel
   %videoFrame = step(videoReader);%
-  videoFrame = readFrame(videoReader); % added
+  videoFrame = readFrame(videoReader); % octave
   %videoFrame=uint8(255*videoFrame) % uncomment
   
 
